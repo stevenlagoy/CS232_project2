@@ -10,23 +10,25 @@
 #include <ctype.h>
 
 #define MAX_WORD_LENGTH 50
-#define NUM_CHILDREN 26
+#define ALPHABET_LEN 26
 #define BUFFER_SIZE 300000
 
-struct trieNode{
-  char word[MAX_WORD_LENGTH];
+struct TrieNode
+{
   int count;
-  struct trieNode** children;
+  char word[MAX_WORD_LENGTH];
+  struct TrieNode* children[ALPHABET_LEN];
 };
 
-/* TODO: change this return type */
-int indexPage(const char* url, struct trieNode *pNode);
+struct TrieNode* createTrieNode();
 
-int addWordOccurrence(const char* word, const int wordLength, struct trieNode *pNode);
+int indexPage(const char* url, struct TrieNode *pNode);
 
-void printTrieContents(struct trieNode *pNode);
+int addWordOccurrence(const char* word, const int wordLength, struct TrieNode *pNode);
 
-int freeTrieMemory(struct trieNode *pNode);
+void printTrieContents(struct TrieNode *pNode);
+
+int freeTrieMemory(struct TrieNode *pNode);
 
 int getText(const char* srcAddr, char* buffer, const int bufSize);
 
@@ -37,24 +39,7 @@ int main(int argc, char** argv){
     return -1;
   }
 
-  struct trieNode *pRoot = malloc(sizeof(struct trieNode));
-  if (pRoot == NULL) {
-      fprintf(stderr, "ERROR: Could not allocate memory\n");
-      return -2;
-  }
-
-  memset(pRoot, 0, sizeof(struct trieNode));
-  pRoot->children = malloc(sizeof(struct trieNode*) * NUM_CHILDREN);
-  if (pRoot->children == NULL) {
-      fprintf(stderr, "ERROR: Could not allocate memory for children\n");
-      free(pRoot);
-      return -2;
-  }
-
-  for (int i = 0; i < NUM_CHILDREN; i++) {
-      pRoot->children[i] = NULL;
-  }
-
+  struct TrieNode *pRoot = createTrieNode();
 
   indexPage(argv[1], pRoot);
   printTrieContents(pRoot);
@@ -63,13 +48,24 @@ int main(int argc, char** argv){
   return 0;
 }
 
-/* TODO: define the functions corresponding to the above prototypes */
+struct TrieNode* createTrieNode() {
+    struct TrieNode* pNode = malloc(sizeof(struct TrieNode));
+    if (pNode == NULL) {
+        printf("Error allocating memory.\n");
+        return NULL;
+    }
+    pNode->count = 0;
+    for (int i = 0; i < ALPHABET_LEN; i++) {
+        pNode->children[i] = NULL;
+    }
+    return pNode;
+}
 
-/* TODO: change this return type */
-int indexPage(const char* url, struct trieNode *pNode) {
+
+int indexPage(const char* url, struct TrieNode *pNode){
     char buffer[BUFFER_SIZE + 1];
     int bytesRead = getText(url, buffer, sizeof(buffer));
-    if (bytesRead <= 0) {
+    if(bytesRead <= 0){
         fprintf(stderr, "ERROR: Could not read page content.\n");
         return -1;
     }
@@ -78,11 +74,11 @@ int indexPage(const char* url, struct trieNode *pNode) {
 
     char word[MAX_WORD_LENGTH];
     int wordLength = 0;
-    for (int i = 0; i < bytesRead; i++) {
-        if (isalpha(buffer[i])) {
+    for(int i = 0; i < bytesRead; i++){
+        if(isalpha(buffer[i])){
             word[wordLength++] = tolower(buffer[i]); // Build the word
-            if (wordLength >= MAX_WORD_LENGTH - 1) break; // Avoid overflow
-        } else if (wordLength > 0) {
+            if(wordLength >= MAX_WORD_LENGTH - 1) break; // Avoid overflow
+        } else if(wordLength > 0){
             word[wordLength] = '\0'; // Null-terminate the word
             printf("\t%s\n", word);  // Print word
             addWordOccurrence(word, wordLength, pNode); // Add word to trie
@@ -91,7 +87,7 @@ int indexPage(const char* url, struct trieNode *pNode) {
     }
 
     // Final check: Add the last word if any remains
-    if (wordLength > 0) {
+    if(wordLength > 0){
         word[wordLength] = '\0';
         addWordOccurrence(word, wordLength, pNode);
     }
@@ -99,55 +95,63 @@ int indexPage(const char* url, struct trieNode *pNode) {
     return 0;
 }
 
-int addWordOccurrence(const char* word, const int wordLength, struct trieNode *pNode) {
-    struct trieNode* current = pNode;
+int addWordOccurrence(const char* word, const int wordLength, struct TrieNode *pNode){
+    struct TrieNode* current = pNode;
 
-    for (int i = 0; i < wordLength; i++) {
+    for(int i = 0; i < wordLength; i++){
         int index = word[i] - 'a';
-        if (index < 0 || index >= NUM_CHILDREN) {
-            return -1; // Invalid character
+        if(index < 0 || index >= ALPHABET_LEN){
+            return -1; // Invalid character (non-alphabetic)
         }
 
-        // Allocate children array if not already allocated
-        if (current->children == NULL) {
-            current->children = malloc(sizeof(struct trieNode*) * NUM_CHILDREN);
-            if (current->children == NULL) {
-                return -2; // Allocation failed
-            }
-            for (int j = 0; j < NUM_CHILDREN; ++j) {
-                current->children[j] = NULL; // Initialize all child pointers
+        // If the node does not exist, allocate memory for it
+        if(current->children[index] == NULL){
+            current->children[index] = createTrieNode();  // Create the node for this character
+            if(current->children[index] == NULL){
+                return -2;  // Allocation failed
             }
         }
-
-        // Allocate the next node if it does not exist
-        if (current->children[index] == NULL) {
-            current->children[index] = malloc(sizeof(struct trieNode));
-            if (current->children[index] == NULL) {
-                return -2; // Allocation failed
-            }
-            memset(current->children[index], 0, sizeof(struct trieNode)); // Initialize
-        }
-
         current = current->children[index];
     }
 
-    // Update word and increment count
+    // Increment the word count and store the word at the final node
     current->count += 1;
-    strncpy(current->word, word, MAX_WORD_LENGTH);
+    strncpy(current->word, word, MAX_WORD_LENGTH); // Store the word in the node (if needed)
     return 0;
 }
 
-void printTrieContents(struct trieNode *pNode) {
-    if (pNode == NULL) return;
 
-    // TODO: complete print function
-    return;
+void printTrieContents(struct TrieNode *pNode){
+    if(pNode == NULL) return;
+
+    // Print current node's word if it has a count > 0
+    if(pNode->count > 0){
+        printf("%s: %d\n", pNode->word, pNode->count);
+    }
+
+    // Check if children are allocated
+    if(pNode->children == NULL) return;
+
+    // Recursively print each child
+    for(int i = 0; i < ALPHABET_LEN; ++i){
+        if(pNode->children[i]){
+            printTrieContents(pNode->children[i]);
+        }
+    }
 }
 
-int freeTrieMemory(struct trieNode *pNode) {
-    if (pNode == NULL) return 0;
+int freeTrieMemory(struct TrieNode *pNode){
+    if(pNode == NULL) return 0;
 
-    // TODO: complete free memory function
+    // Recursively free each child node
+    for(int i = 0; i < ALPHABET_LEN; i++){
+        if(pNode->children[i] != NULL){
+            freeTrieMemory(pNode->children[i]);
+        }
+    }
+
+    // Free the current node after all children are freed
+    free(pNode);
     return 0;
 }
 
