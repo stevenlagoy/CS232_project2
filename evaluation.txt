@@ -1,0 +1,20 @@
+Project 2 Evaluation Log
+CS 232 - Intro to C and Unix
+21 November 2024
+
+Group Members:
+    Allen Hawkins
+    Steven LaGoy
+
+indexPage.c
+    struct TrieNode - Steven L
+    main() function - Steven L
+    createTrieNode() - Allen H
+    indexPage() - Steven L
+    addWordOccurrence() - Steven L
+    printTrieContents() - Allen H
+    freeTrieMemory() - Allen H
+
+Hours worked:
+    Allen H - 
+    Steven L - 11 Hours
