@@ -40,6 +40,10 @@ int main(int argc, char** argv){
   }
 
   struct TrieNode *pRoot = createTrieNode();
+  if(pRoot == NULL){
+    printf("ERROR: Could not allocate memory.\n");
+    return -2; 
+  }
 
   indexPage(argv[1], pRoot);
   printTrieContents(pRoot);
@@ -49,9 +53,9 @@ int main(int argc, char** argv){
 }
 
 struct TrieNode* createTrieNode() {
+    // Create a TrieNode and return a pointer to it.
     struct TrieNode* pNode = malloc(sizeof(struct TrieNode));
     if (pNode == NULL) {
-        printf("Error allocating memory.\n");
         return NULL;
     }
     pNode->count = 0;
@@ -63,6 +67,9 @@ struct TrieNode* createTrieNode() {
 
 
 int indexPage(const char* url, struct TrieNode *pNode){
+    // Read words from the webpage, add nodes to the trie structure corresponding to the read words.
+
+    // Read words with getText function
     char buffer[BUFFER_SIZE + 1];
     int bytesRead = getText(url, buffer, sizeof(buffer));
     if(bytesRead <= 0){
@@ -72,6 +79,7 @@ int indexPage(const char* url, struct TrieNode *pNode){
 
     printf("%s\n", url);  // Print URL
 
+    // Add the read words to the Trie structure
     char word[MAX_WORD_LENGTH];
     int wordLength = 0;
     for(int i = 0; i < bytesRead; i++){
@@ -96,8 +104,10 @@ int indexPage(const char* url, struct TrieNode *pNode){
 }
 
 int addWordOccurrence(const char* word, const int wordLength, struct TrieNode *pNode){
+    // Add a word to the Trie Structure.
     struct TrieNode* current = pNode;
 
+    // Loop through each character in the word
     for(int i = 0; i < wordLength; i++){
         int index = word[i] - 'a';
         if(index < 0 || index >= ALPHABET_LEN){
@@ -122,6 +132,9 @@ int addWordOccurrence(const char* word, const int wordLength, struct TrieNode *p
 
 
 void printTrieContents(struct TrieNode *pNode){
+    // Recursively print the contents of the Trie structure in alphabetical order.
+    
+    // Base case
     if(pNode == NULL) return;
 
     // Print current node's word if it has a count > 0
@@ -141,6 +154,9 @@ void printTrieContents(struct TrieNode *pNode){
 }
 
 int freeTrieMemory(struct TrieNode *pNode){
+    // Recursively deallocate the memory for a Trie structure.
+    
+    // Base case
     if(pNode == NULL) return 0;
 
     // Recursively free each child node
@@ -154,7 +170,6 @@ int freeTrieMemory(struct TrieNode *pNode){
     free(pNode);
     return 0;
 }
-
 
 /* Don't modify this function */
 int getText(const char* srcAddr, char* buffer, const int bufSize){
